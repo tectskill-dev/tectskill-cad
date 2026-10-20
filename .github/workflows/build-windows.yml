@@ -1,0 +1,54 @@
+name: Build TectSkill CAD (Windows)
+
+on:
+  workflow_dispatch:        # "Run workflow" button on the Actions tab
+  push:
+    tags: ["v*"]            # pushing a tag like v1.0.0 also publishes a Release
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release -p cadcraft
+
+      - name: Third-party license list
+        continue-on-error: true
+        run: |
+          cargo install cargo-about --locked --features cli
+          cargo about generate -c about.toml about.hbs -o THIRD-PARTY-LICENSES.html
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $pkg = "dist/TectSkill-CAD"
+          New-Item -ItemType Directory -Force $pkg | Out-Null
+          Copy-Item target/release/cadcraft.exe "$pkg/TectSkill-CAD.exe"
+          Copy-Item LICENSE-MIT, LICENSE-APACHE, NOTICE, CHANGES.txt $pkg
+          Copy-Item tools/Thai-Font-Fix.bat $pkg
+          if (Test-Path THIRD-PARTY-LICENSES.html) { Copy-Item THIRD-PARTY-LICENSES.html $pkg }
+          else { Write-Warning "THIRD-PARTY-LICENSES.html was not made" }
+          Compress-Archive -Path "$pkg/*" -DestinationPath dist/TectSkill-CAD-windows.zip -Force
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: TectSkill-CAD-windows
+          path: dist/TectSkill-CAD-windows.zip
+
+      - name: Publish Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/TectSkill-CAD-windows.zip

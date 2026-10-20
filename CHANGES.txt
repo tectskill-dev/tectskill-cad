@@ -1,0 +1,20 @@
+TectSkill CAD
+==========================================
+
+TectSkill CAD is a modified version of CADCraft by the ArtCraft team
+(https://github.com/storytold/cadcraft), based on source revision
+0b32c2e6a14c761835ea62c01e7b20845971d781.
+
+Changes made by TectSkill:
+  - Thai text support: automatic Thai fallback fonts, and Thai shown in the
+    interface and the text editor.
+  - FONTALT and FONTFALLBACK are kept between sessions.
+  - Product name, About window and icon changed to TectSkill CAD.
+  - ArtCraft name, logos and links removed, as CADCraft's brand terms require.
+
+TectSkill CAD is not made, sponsored or endorsed by the ArtCraft team.
+CADCraft is licensed under MIT OR Apache-2.0: see LICENSE-MIT, LICENSE-APACHE
+and NOTICE. Open-source components it uses are listed in
+THIRD-PARTY-LICENSES.html.
+
+https://tectskill.com

@@ -1,2 +1,8 @@
 [alias]
 xtask = "run --package xtask --"
+
+# TectSkill CAD branding: every build of this repository is TectSkill CAD.
+[env]
+CADCRAFT_BRAND_NAME = "TectSkill CAD"
+CADCRAFT_BRAND_PUBLISHER = "TectSkill"
+CADCRAFT_BRAND_URL = "https://tectskill.com"

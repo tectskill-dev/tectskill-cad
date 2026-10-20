@@ -137,7 +137,7 @@ fn hostile_saved_profiles_are_ignored() {
         "not json".into(),
         "[]".into(),
         r#"{"sysvars": "PICKBOX"}"#.into(),
-        r#"{"sysvars": {"PICKBOX": "x", "LUNITS": 4, "FONTALT": "evil.ttf"}, "modelBackground": "red", "snapMarkerSize": -1}"#.into(),
+        r#"{"sysvars": {"PICKBOX": "x", "LUNITS": 4, "CLAYER": "evil"}, "modelBackground": "red", "snapMarkerSize": -1}"#.into(),
         format!(r#"{{"sysvars": {{"PICKBOX": 5}}, "pad": "{}"}}"#, "x".repeat(70_000)),
     ] {
         let mut b = app();

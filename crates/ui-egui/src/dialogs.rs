@@ -326,13 +326,30 @@ fn about(ctx: &egui::Context, open: &mut bool) {
                 1 => crate::credits::contributors_ui(ui),
                 2 => crate::credits::models_ui(ui),
                 _ => {
-                    ui.heading(crate::tl!("CADCraft"));
+                    if crate::brand::REBRANDED {
+                        ui.heading(crate::brand::NAME);
+                    } else {
+                        ui.heading(crate::tl!("CADCraft"));
+                    }
                     ui.label(crate::tf!("Version {version}", version = env!("CARGO_PKG_VERSION")));
                     ui.label(crate::tl!("Computer-aided design and drafting: an open-source, clean-room CAD application written in pure Rust."));
                     ui.add_space(6.0);
-                    ui.label(RichText::new(crate::tl!("One of the Crafting Apps by the ArtCraft team and community.")).color(t.text_dim));
-                    ui.hyperlink_to("getartcraft.com/apps/cadcraft", "https://getartcraft.com/apps/cadcraft");
-                    ui.hyperlink_to(crate::tl!("Join us on Discord"), "https://discord.gg/artcraft");
+                    if crate::brand::REBRANDED {
+                        // A modified build: no ArtCraft marks, and no suggestion that the ArtCraft
+                        // team made or supports it (docs/brand/LICENSE-brand.txt).
+                        if !crate::brand::PUBLISHER.is_empty() {
+                            ui.label(RichText::new(format!("{} by {}", crate::brand::NAME, crate::brand::PUBLISHER)).color(t.text_dim));
+                        }
+                        if !crate::brand::URL.is_empty() {
+                            ui.hyperlink_to(crate::brand::URL.trim_start_matches("https://"), crate::brand::URL);
+                        }
+                        ui.label(RichText::new("Based on CADCraft by the ArtCraft team, with Thai text support added.").color(t.text_dim));
+                        ui.hyperlink_to("CADCraft source code", "https://github.com/storytold/cadcraft");
+                    } else {
+                        ui.label(RichText::new(crate::tl!("One of the Crafting Apps by the ArtCraft team and community.")).color(t.text_dim));
+                        ui.hyperlink_to("getartcraft.com/apps/cadcraft", "https://getartcraft.com/apps/cadcraft");
+                        ui.hyperlink_to(crate::tl!("Join us on Discord"), "https://discord.gg/artcraft");
+                    }
                     ui.add_space(6.0);
                     ui.label(RichText::new(crate::tl!("MIT OR Apache-2.0. Not affiliated with Autodesk, Inc.")).small().color(t.text_faint));
                 }
