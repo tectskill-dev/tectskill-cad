@@ -40,6 +40,14 @@ pub fn check_now(app: &mut CadApp) {
 /// Start the checks and collect the answers.
 pub fn tick(app: &mut CadApp, ctx: &egui::Context) {
     let rt = &mut app.updates_rt;
+    // A rebranded build never updates itself to CADCraft (that would replace it with the
+    // unmodified app); Check for Updates opens the publisher's download page instead.
+    if crate::brand::REBRANDED {
+        if std::mem::take(&mut rt.check_requested) && !crate::brand::UPDATES_URL.is_empty() {
+            ctx.open_url(egui::OpenUrl::new_tab(crate::brand::UPDATES_URL));
+        }
+        return;
+    }
     if std::mem::take(&mut rt.check_requested) {
         rt.updater.check_now(ctx);
     } else if rt.enabled {
@@ -59,6 +67,9 @@ pub fn tick(app: &mut CadApp, ctx: &egui::Context) {
 
 /// Draw the prompt while there is one and act on its answer.
 pub fn show(app: &mut CadApp, ctx: &egui::Context) {
+    if crate::brand::REBRANDED {
+        return;
+    }
     // The restart helper is scheduled before the app closes, so no update starts over unsaved work.
     let clean = !app.session.docs.iter().any(|d| d.is_dirty());
     match app.updates_rt.updater.show_if(ctx, clean) {

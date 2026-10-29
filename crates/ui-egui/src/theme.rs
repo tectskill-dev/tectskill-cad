@@ -372,6 +372,12 @@ pub fn install_fonts(ctx: &egui::Context, language: &str) {
         {
             added.push(("system-arabic".into(), std::sync::Arc::new(egui::FontData::from_owned(bytes))));
         }
+        // ไทย: an installed Thai face after the Latin ones in every interface language (egui's
+        // bundled faces carry no Thai glyphs), so Thai file names, layer names and the in-place
+        // text editor show Thai instead of tofu.
+        if let Some(bytes) = thai_font().and_then(|p| read_capped(p, MAX_UI_FONT_BYTES)) {
+            added.push(("system-thai".into(), std::sync::Arc::new(egui::FontData::from_owned(bytes))));
+        }
     }
     let embedded: Vec<_> = cadcraft_fonts::CRAFT_FONTS.iter().collect();
     added.extend(
@@ -476,6 +482,37 @@ pub fn cjk_font() -> Option<&'static std::path::Path> {
     }
     #[cfg(target_arch = "wasm32")]
     None
+}
+
+/// An installed font with Thai glyphs, for Thai names and text in any interface language; never
+/// bundled. Checked once.
+pub fn thai_font() -> Option<&'static std::path::Path> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        static FOUND: std::sync::OnceLock<Option<std::path::PathBuf>> = std::sync::OnceLock::new();
+        FOUND
+            .get_or_init(|| {
+                let candidates: &[&str] = if cfg!(target_os = "macos") {
+                    &["/System/Library/Fonts/Supplemental/Thonburi.ttc", "/System/Library/Fonts/Thonburi.ttc", "/System/Library/Fonts/Supplemental/Tahoma.ttf"]
+                } else if cfg!(windows) {
+                    &["C:\\Windows\\Fonts\\tahoma.ttf", "C:\\Windows\\Fonts\\LeelawUI.ttf", "C:\\Windows\\Fonts\\leelawad.ttf"]
+                } else {
+                    &[
+                        "/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf",
+                        "/usr/share/fonts/noto/NotoSansThai-Regular.ttf",
+                        "/usr/share/fonts/opentype/noto/NotoSansThai-Regular.ttf",
+                        "/usr/share/fonts/truetype/tlwg/Loma.ttf",
+                        "/usr/share/fonts/truetype/tlwg/Garuda.ttf",
+                    ]
+                };
+                candidates.iter().map(std::path::PathBuf::from).find(|p| p.is_file())
+            })
+            .as_deref()
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        None
+    }
 }
 
 /// An installed font with Arabic glyphs, for the العربية interface; fonts are never bundled

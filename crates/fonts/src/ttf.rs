@@ -155,6 +155,25 @@ const ARABIC_FALLBACK: &[&str] = &[
     "dejavusans",
 ];
 const HEBREW_FALLBACK: &[&str] = &["notosanshebrew", "notoserifhebrew", "arial", "tahoma", "segoeui", "dejavusans"];
+/// Thai: Windows (Leelawadee, Tahoma, the Cordia/Angsana/Browallia families), macOS (Thonburi,
+/// Sukhumvit), Linux (Noto, TLWG) and common Google fonts (Sarabun).
+const THAI_FALLBACK: &[&str] = &[
+    "notosansthai",
+    "notoserifthai",
+    "leelaw",
+    "tahoma",
+    "thonburi",
+    "sukhumvit",
+    "sarabun",
+    "cordia",
+    "angsa",
+    "browa",
+    "garuda",
+    "loma",
+    "waree",
+    "norasi",
+    "kinnari",
+];
 /// Script-specific fallback files loaded per character, at most.
 const MAX_SCRIPT_FILES: usize = 4;
 
@@ -163,6 +182,7 @@ fn script_fallback(c: char) -> &'static [&'static str] {
     match c {
         '\u{0600}'..='\u{08FF}' | '\u{FB50}'..='\u{FDFF}' | '\u{FE70}'..='\u{FEFF}' => ARABIC_FALLBACK,
         '\u{0590}'..='\u{05FF}' | '\u{FB1D}'..='\u{FB4F}' => HEBREW_FALLBACK,
+        '\u{0E00}'..='\u{0E7F}' => THAI_FALLBACK,
         _ => &[],
     }
 }
