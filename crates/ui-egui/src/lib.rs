@@ -20,6 +20,7 @@ pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
 pub mod aliasdlg;
 pub mod animation;
 pub mod autosave;
+pub mod brand;
 pub mod bedit;
 pub mod canvas;
 pub mod capture;
@@ -186,7 +187,7 @@ impl Default for UiState {
         UiState {
             docking: docking::default_workspace(),
 
-            interface_language: i18n::Preference::default(),
+            interface_language: i18n::Preference::startup(),
             show_toolsets: true,
             show_palettes: true,
             show_toolbar: true,

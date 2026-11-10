@@ -335,6 +335,7 @@ fn run_language_command(app: &mut CadApp, id: &str, params: &Value) -> Option<Re
             "vi" => {
                 "No installed interface font has the Vietnamese letters, so the interface stays in English. Install one that does (Segoe UI, Arial, DejaVu Sans or Noto Sans) to use Vietnamese."
             }
+            "th" => "No Thai font is installed, so the interface stays in English. Install one (Tahoma, Leelawadee UI or Noto Sans Thai, for example) to use Thai.",
             "ar" => "No Arabic font is installed, so the interface stays in English. Install one (Noto Sans Arabic, for example) to use Arabic.",
             "ka" => "This build has no Georgian font, so the interface stays in English. Build with craft-fonts (its Geor face) to use Georgian.",
             _ => "No Chinese font is installed, so the interface stays in English. Install one (Noto Sans CJK, for example) to use Chinese.",

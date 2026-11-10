@@ -53,7 +53,27 @@ pub const PROFILE_VARS: &[&str] = &[
     "PICKDRAG",
     "MAXARRAY",
     "MEASUREINIT",
+    // Font substitution (process-wide, like AutoCAD keeps them in the profile).
+    "FONTALT",
+    "FONTFALLBACK",
 ];
+
+/// The process-wide font settings, which live outside `Session::settings` and so need their
+/// own snapshot for the all-or-nothing rollbacks below.
+struct FontPrefs {
+    alt: String,
+    fallback: String,
+}
+
+impl FontPrefs {
+    fn take() -> Self {
+        FontPrefs { alt: cadcraft_fonts::ttf::font_alt(), fallback: cadcraft_fonts::ttf::fallback_fonts() }
+    }
+    fn put_back(self) {
+        cadcraft_fonts::ttf::set_font_alt(&self.alt);
+        cadcraft_fonts::ttf::set_fallback_fonts(&self.fallback);
+    }
+}
 
 /// The most profile entries [`restore`] reads (a saved profile is untrusted input).
 const MAX_ENTRIES: usize = 256;
@@ -90,13 +110,16 @@ pub fn profile(s: &Session) -> Value {
 pub fn apply(s: &mut Session, values: &Value) -> Result<()> {
     let Some(obj) = values.as_object() else { return Err(bad("options", "expected an object of profile variables")) };
     let before = s.settings.clone();
+    let fonts = FontPrefs::take();
     for (name, v) in obj {
         if !is_profile_var(name) {
             s.settings = before;
+            fonts.put_back();
             return Err(bad("options", format!("{name} is not a profile setting")));
         }
         if let Err(e) = crate::sysvars::set(s, name, v) {
             s.settings = before;
+            fonts.put_back();
             return Err(bad("options", format!("invalid value for {}: {e}", name.to_ascii_uppercase())));
         }
     }
@@ -145,6 +168,8 @@ pub fn reset(s: &mut Session) {
     st.pickadd = d.pickadd;
     st.pickdrag = d.pickdrag;
     st.maxarray = d.maxarray;
+    cadcraft_fonts::ttf::set_font_alt("");
+    cadcraft_fonts::ttf::set_fallback_fonts("");
 }
 
 fn run_options(s: &mut Session, p: &Value) -> Result<Value> {
@@ -164,11 +189,13 @@ fn run_options(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let values: Map<String, Value> = obj.iter().filter(|(k, _)| k.as_str() != "reset").map(|(k, v)| (k.clone(), v.clone())).collect();
     let before = s.settings.clone();
+    let fonts = FontPrefs::take();
     if reset_first {
         reset(s);
     }
     if let Err(e) = apply(s, &Value::Object(values)) {
         s.settings = before;
+        fonts.put_back();
         return Err(e);
     }
     s.touch();
