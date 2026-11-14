@@ -21,6 +21,7 @@ pub mod aliasdlg;
 pub mod animation;
 pub mod autosave;
 pub mod bedit;
+pub mod brand;
 pub mod canvas;
 pub mod capture;
 pub mod chrome;
@@ -186,7 +187,7 @@ impl Default for UiState {
         UiState {
             docking: docking::default_workspace(),
 
-            interface_language: i18n::Preference::default(),
+            interface_language: i18n::Preference::startup(),
             show_toolsets: true,
             show_palettes: true,
             show_toolbar: true,
@@ -224,6 +225,9 @@ pub struct Services {
     /// `None` where there is no native file dialog: the desktop without one asks for the name,
     /// and the web (no file system) says to drop the file (`no_file_system`).
     pub pick_lisp: Option<Box<dyn Fn(&str) -> Option<String>>>,
+    /// Pick a plot style table file to load (`.ctb`, `.stb` or our JSON table) for the Plot Style
+    /// Manager's Load button; `None` hides the button.
+    pub pick_plot_style: Option<Box<dyn Fn() -> Option<String>>>,
     /// The host has no file system to read a path from (the browser): a dropped file's contents
     /// are what it loads, and APPLOAD says so instead of asking for a name it cannot read.
     pub no_file_system: bool,

@@ -81,11 +81,18 @@ prints as `Normal`. A colour-dependent table ignores the property.
   style and the named styles.
 - `layer.set {name, plotStyle}` sets a layer's plot style.
 - `stylesmanager {action, …}` manages the tables: `list`, `get`, `new` (`kind`, `from`), `set`
-  (`style: {name, …fields}`, `removeStyle`, `description`), `delete`, `load` (`path` or `text`)
+  (`style: {name, …fields}`, `removeStyle`, `description`), `delete`, `load` (`path` or `text`; a `path` may also be an AutoCAD `.ctb` / `.stb`)
   and `save` (`path`, or returns `text`). Typed or chosen from **File ▸ Plot Styles...**, it
   opens the Plot Style Manager dialog.
 
 ## Table files
+
+AutoCAD `.ctb` and `.stb` files load too (**Load...** in the Plot Style Manager, or
+`stylesmanager {"action":"load","path":"office.ctb"}`): colour, grayscale, screening,
+lineweight (through the file's own lineweight list), line end, join and fill carry over. An
+AutoCAD plot linetype other than solid has no counterpart, so that style keeps the object's
+linetype; the result lists those styles in `linetypesNotConverted`.
+
 
 Tables are saved in our own format: UTF-8 JSON with a format marker. Fields left at "use the
 object's" are omitted.

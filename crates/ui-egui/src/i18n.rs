@@ -51,10 +51,12 @@ pub enum Preference {
     Bosnian,
     #[serde(rename = "vi")]
     Vietnamese,
+    #[serde(rename = "th")]
+    Thai,
 }
 
 impl Preference {
-    pub const ALL: [Self; 20] = [
+    pub const ALL: [Self; 21] = [
         Self::Auto,
         Self::English,
         Self::Greek,
@@ -75,6 +77,7 @@ impl Preference {
         Self::Georgian,
         Self::Bosnian,
         Self::Vietnamese,
+        Self::Thai,
     ];
 
     /// Every preference in the order the Interface Language dialog lists them: Auto, then English
@@ -125,11 +128,15 @@ impl Preference {
             Self::Georgian => "ka",
             Self::Bosnian => "bs",
             Self::Vietnamese => "vi",
+            Self::Thai => "th",
         }
     }
 
     pub fn name(self) -> &'static str {
         match self {
+            // A rebranded build's Auto is its own language, which an earlier saved "auto" also
+            // follows, so the picker names that language instead of the system's.
+            Self::Auto if brand_language() == Some("th") => "Default (ไทย)",
             Self::Auto => t("Auto (system language)"),
             Self::English => "English",
             Self::Greek => "Ελληνικά",
@@ -171,7 +178,21 @@ impl Preference {
                     "Vietnamese"
                 }
             }
+            // Thai letters need an installed Thai face ([`crate::theme::thai_font`]).
+            Self::Thai => {
+                if crate::theme::thai_font().is_some() {
+                    "ไทย"
+                } else {
+                    "Thai"
+                }
+            }
         }
+    }
+
+    /// The language a build starts in before anyone picks one: Auto, or the language a rebranded
+    /// build names in `CADCRAFT_BRAND_LANGUAGE` at compile time.
+    pub fn startup() -> Self {
+        option_env!("CADCRAFT_BRAND_LANGUAGE").and_then(Self::parse).unwrap_or_default()
     }
 
     pub fn parse(code: &str) -> Option<Self> {
@@ -204,7 +225,8 @@ impl Preference {
             Self::Georgian => "ka",
             Self::Bosnian => "bs",
             Self::Vietnamese => "vi",
-            Self::Auto => locales.iter().find_map(|s| locale_language(s)).unwrap_or("en"),
+            Self::Thai => "th",
+            Self::Auto => brand_language().or_else(|| locales.iter().find_map(|s| locale_language(s))).unwrap_or("en"),
         }
     }
 }
@@ -220,7 +242,7 @@ pub struct Language {
     catalog: OnceLock<Catalog<'static>>,
 }
 
-pub static LANGUAGES: [Language; 19] = [
+pub static LANGUAGES: [Language; 20] = [
     Language { code: "en", name: "English", source: "", plural: plural_en, plural_forms: 2, catalog: OnceLock::new() },
     // Greek: one for exactly 1; other for zero and all other integer counts.
     Language {
@@ -279,7 +301,15 @@ pub static LANGUAGES: [Language; 19] = [
     Language {
         code: "vi", name: "Tiếng Việt", source: include_str!("i18n/vi.tsv"), plural: plural_ko, plural_forms: 1, catalog: OnceLock::new()
     },
+    // Thai doesn't inflect a noun for number either, so it has one form.
+    Language { code: "th", name: "ไทย", source: include_str!("i18n/th.tsv"), plural: plural_ko, plural_forms: 1, catalog: OnceLock::new() },
 ];
+
+/// The language a rebranded build names in `CADCRAFT_BRAND_LANGUAGE`, if this build has its catalog.
+pub fn brand_language() -> Option<&'static str> {
+    let code = option_env!("CADCRAFT_BRAND_LANGUAGE")?;
+    LANGUAGES.iter().find(|l| l.code == code).map(|l| l.code)
+}
 
 /// BCP 47 and POSIX locale tags, including `uk-UA`, `uk_UA.UTF-8` and `pt_BR.UTF-8`.
 /// A catalog is chosen by the tag's primary language, so any `pt-*` tag selects `pt-BR`.

@@ -298,8 +298,9 @@ fn run_stylesmanager(s: &mut Session, p: &Value) -> Result<Value> {
             Ok(json!({ "deleted": name }))
         }
         "load" => {
-            let text = match (str_param(p, "text"), str_param(p, "path")) {
-                (Some(t), _) => t.to_string(),
+            // `path` reads our own JSON table or an AutoCAD `.ctb` / `.stb`; `text` is our JSON.
+            let bytes: Vec<u8> = match (str_param(p, "text"), str_param(p, "path")) {
+                (Some(t), _) => t.as_bytes().to_vec(),
                 (None, Some(_path)) => {
                     #[cfg(not(target_arch = "wasm32"))]
                     {
@@ -307,21 +308,36 @@ fn run_stylesmanager(s: &mut Session, p: &Value) -> Result<Value> {
                         if meta.len() > cadcraft_doc::MAX_TABLE_FILE as u64 {
                             return Err(bad(cmd, format!("{_path}: the plot style table file is too large")));
                         }
-                        std::fs::read_to_string(_path).map_err(|e| bad(cmd, format!("{_path}: {e}")))?
+                        std::fs::read(_path).map_err(|e| bad(cmd, format!("{_path}: {e}")))?
                     }
                     #[cfg(target_arch = "wasm32")]
                     return Err(bad(cmd, "files can't be read here: pass `text`"));
                 }
                 (None, None) => return Err(bad(cmd, "`path` or `text` is required")),
             };
-            let mut t = PlotStyleTable::from_file_text(&text).map_err(|e| bad(cmd, e))?;
+            let mut not_converted: Vec<String> = Vec::new();
+            let mut t = if cadcraft_doc::is_acad_plot_style_file(&bytes) {
+                let file_name = str_param(p, "path").unwrap_or("imported.ctb");
+                let (t, notes) = cadcraft_doc::plot_style_table_from_acad(file_name, &bytes).map_err(|e| bad(cmd, e))?;
+                not_converted = notes.linetypes_not_converted;
+                t
+            } else {
+                let text = String::from_utf8(bytes).map_err(|_| bad(cmd, "not a plot style table (.ctb, .stb or CADCraft JSON)"))?;
+                PlotStyleTable::from_file_text(&text).map_err(|e| bad(cmd, e))?
+            };
             if let Some(n) = str_param(p, "name").map(str::trim).filter(|n| !n.is_empty()) {
                 t.name = n.chars().take(255).collect();
             }
             if t.name.is_empty() {
                 return Err(bad(cmd, "the table has no name: pass `name`"));
             }
-            let out = table_summary(s.doc()?, &t);
+            let mut out = table_summary(s.doc()?, &t);
+            if !not_converted.is_empty()
+                && let Some(o) = out.as_object_mut()
+            {
+                // AutoCAD's own plot linetypes have no counterpart: those styles keep the object's.
+                o.insert("linetypesNotConverted".into(), json!(not_converted));
+            }
             store(s.doc_mut()?, t);
             Ok(out)
         }

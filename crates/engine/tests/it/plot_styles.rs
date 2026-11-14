@@ -131,3 +131,41 @@ fn plot_style_save_is_atomic_and_keeps_permissions() {
     assert_eq!(std::fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+/// An AutoCAD colour-dependent table (`.ctb`) loads by path: its pens become a table in the
+/// drawing under the file's name, and a plot linetype with no counterpart is reported.
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn stylesmanager_loads_an_autocad_ctb() {
+    let mut text = String::from("description=\"Office pens\nplot_style{\n");
+    for i in 0..255 {
+        let (color, lw, lt) = if i == 0 {
+            (-16_777_216i64, 10, 31)
+        } else if i == 1 {
+            (-1_006_632_961, 255, 4)
+        } else {
+            (-1_006_632_961, 255, 31)
+        };
+        text.push_str(&format!(" {i}{{\n  name=\"Color_{}\n  color={color}\n  linetype={lt}\n  lineweight={lw}\n }}\n", i + 1));
+    }
+    text.push_str("}\n\0");
+    let mut bytes = b"PIAFILEVERSION_2.0,CTBVER1,compress\r\npmzlibcodec".to_vec();
+    bytes.resize(60, 0);
+    bytes.extend_from_slice(&miniz_oxide::deflate::compress_to_vec_zlib(text.as_bytes(), 6));
+    let dir = std::env::temp_dir().join(format!("cadcraft-ctb-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("office.ctb");
+    std::fs::write(&path, &bytes).unwrap();
+
+    let mut s = Session::new();
+    let out = s.execute("stylesmanager", &json!({"action": "load", "path": path.to_string_lossy()})).unwrap();
+    assert_eq!(out["name"], "office.ctb");
+    assert_eq!(out["kind"], "colorDependent");
+    assert_eq!(out["linetypesNotConverted"], json!(["2"]));
+    let t = s.execute("stylesmanager", &json!({"action": "get", "name": "office.ctb"})).unwrap();
+    assert_eq!(t["description"], "Office pens");
+    let pen1 = &t["styles"][0];
+    assert_eq!(pen1["color"], "#000000");
+    assert_eq!(pen1["lineweight"], 35);
+    let _ = std::fs::remove_dir_all(&dir);
+}

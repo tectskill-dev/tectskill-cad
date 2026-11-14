@@ -36,8 +36,30 @@ type Action = Option<(&'static str, Value)>;
 pub fn dialog(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) {
     let action = window(app, ctx, open);
     if let Some((cmd, p)) = action {
+        if cmd == PICK_AND_LOAD {
+            load_picked(app, ctx);
+            return;
+        }
         // Errors are echoed on the command line by `run`.
         let _ = app.run(cmd, p);
+    }
+}
+
+/// The Load button's action: ask for a file, then load it with STYLESMANAGER.
+const PICK_AND_LOAD: &str = "pstyle.load";
+
+/// Pick a `.ctb`, `.stb` or JSON table file and load it into the drawing, selecting it.
+fn load_picked(app: &mut CadApp, ctx: &egui::Context) {
+    let Some(path) = app.services.pick_plot_style.as_ref().and_then(|f| f()) else { return };
+    // Errors are echoed on the command line by `run`.
+    if let Ok(out) = app.run("stylesmanager", json!({ "action": "load", "path": path })) {
+        if let Some(name) = out.get("name").and_then(Value::as_str) {
+            set_temp(ctx, "pstyle_sel", name.to_string());
+        }
+        if let Some(skipped) = out.get("linetypesNotConverted").and_then(Value::as_array).filter(|a| !a.is_empty()) {
+            let msg = crate::tf!("{n} plot styles use an AutoCAD plot linetype and keep the object's linetype instead.", n = skipped.len());
+            app.session.echo(msg.to_string());
+        }
     }
 }
 
@@ -86,6 +108,14 @@ fn window(app: &mut CadApp, ctx: &egui::Context, open: &mut bool) -> Action {
             }
             if ui.button(crate::tl!("New STB")).clicked() {
                 action = Some(("stylesmanager", json!({ "action": "new", "name": "new.stb" })));
+            }
+            if app.services.pick_plot_style.is_some()
+                && ui
+                    .button(crate::tl!("Load..."))
+                    .on_hover_text(crate::tl!("Load a plot style table file: AutoCAD .ctb or .stb, or a saved table"))
+                    .clicked()
+            {
+                action = Some((PICK_AND_LOAD, Value::Null));
             }
             if ui.add_enabled(in_drawing, egui::Button::new(crate::tl!("Delete"))).clicked() {
                 action = Some(("stylesmanager", json!({ "action": "delete", "name": sel })));

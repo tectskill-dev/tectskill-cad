@@ -180,6 +180,14 @@ fn services() -> Services {
             let dialog = if dir.is_empty() { dialog } else { dialog.set_directory(dir) };
             dialog.pick_file().map(|p| p.to_string_lossy().to_string())
         })),
+        // Plot Style Manager ▸ Load: AutoCAD plot style tables or our own saved tables.
+        pick_plot_style: Some(Box::new(|| {
+            rfd::FileDialog::new()
+                .add_filter(i18n::t("Plot style tables (CTB, STB)"), &["ctb", "stb", "json"])
+                .add_filter(i18n::t("All files"), &["*"])
+                .pick_file()
+                .map(|p| p.to_string_lossy().to_string())
+        })),
         no_file_system: false,
     }
 }
@@ -212,7 +220,7 @@ fn restores_window() -> bool {
 fn window_options(restoring: bool) -> eframe::NativeOptions {
     eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_title("CADCraft")
+            .with_title(cadcraft_ui_egui::brand::NAME)
             .with_inner_size([1600.0, 1000.0])
             .with_min_inner_size([900.0, 560.0])
             .with_drag_and_drop(true)

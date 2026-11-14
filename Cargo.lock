@@ -681,6 +681,7 @@ version = "0.18.0"
 dependencies = [
  "cadcraft-color",
  "cadcraft-geom",
+ "miniz_oxide 0.9.1",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
@@ -718,6 +719,7 @@ dependencies = [
  "craft-docpath",
  "libc",
  "log",
+ "miniz_oxide 0.9.1",
  "rstar",
  "serde",
  "serde_json",
